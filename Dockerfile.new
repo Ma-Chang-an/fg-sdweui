@@ -1,0 +1,57 @@
+# 项目基于的python版本
+FROM nvidia/cuda:11.8.0-base-ubuntu22.04
+
+ENV HOME=/home/paas
+ENV GROUP_ID=1003
+ENV GROUP_NAME=paas
+ENV USER_ID=1003
+ENV USER_NAME=paas
+
+RUN groupadd -g ${GROUP_ID} ${GROUP_NAME} && useradd -m -u ${USER_ID} -g ${GROUP_ID} ${USER_NAME}
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 libglib2.0-0 wget git gcc g++ python3 python3-pip && \
+    apt-get clean &&  \
+    rm -rf /var/lib/apt/lists/* 
+
+RUN ln -sfn /usr/bin/python3 /usr/bin/python
+
+COPY  --chown=${USER_ID}:${GROUP_ID} ./stable-diffusion-webui ${HOME}/stable-diffusion-webui
+COPY  --chown=${USER_ID}:${GROUP_ID} ./models/Stable-diffusion/sd-v1-5-inpainting.ckpt ${HOME}/stable-diffusion-webui/models/Stable-diffusion/sd-v1-5-inpainting.ckpt
+COPY  --chown=${USER_ID}:${GROUP_ID} ./openai ${HOME}/openai
+COPY  --chown=${USER_ID}:${GROUP_ID} ./modules.py ${HOME}/stable-diffusion-webui/repositories/stable-diffusion-stability-ai/ldm/modules/encoders/modules.py
+RUN cd ${HOME}/stable-diffusion-webui && \
+    pip3 install rich==13.4.2 numexpr matplotlib pandas av pims imageio_ffmpeg gdown mediapipe==0.10.2 \
+        ultralytics==8.0.145 py-cpuinfo protobuf==3.20 rembg==2.0.38 \
+        deepdanbooru onnxruntime-gpu jsonschema opencv_contrib_python opencv_python opencv_python_headless packaging Pillow tqdm \
+        chardet PyExecJS lxml pathos cryptography openai aliyun-python-sdk-core aliyun-python-sdk-alimt send2trash \
+        insightface==0.7.3 tensorflow ifnude && \
+    pip3 install xformers==0.0.20 taming-transformers-rom1504 && \
+    pip3 install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cu118 && \
+    pip3 install -r requirements_versions.txt --no-cache-dir && \
+    find ${HOME}/stable-diffusion-webui/repositories -name requirements.txt | xargs -I {} pip3 install -r {} || echo "failed" && \
+ 
+COPY  --chown=${USER_ID}:${GROUP_ID} ./sd-resource/extensions ${HOME}/stable-diffusion-webui/extensions
+COPY  --chown=${USER_ID}:${GROUP_ID} ./sd-resource/localizations ${HOME}/stable-diffusion-webui/localizations
+COPY  --chown=${USER_ID}:${GROUP_ID} ./sd-resource/config.json ${HOME}/stable-diffusion-webui/config.json
+COPY  --chown=${USER_ID}:${GROUP_ID} ./sd-resource/ui-config.json ${HOME}/stable-diffusion-webui/ui-config.json
+#RUN chmod 777 ${HOME}
+# 把code设置为工作目录
+USER ${USER_NAME}
+WORKDIR ${HOME}/stable-diffusion-webui
+
+# 暴露容器端口8000
+EXPOSE 8000
+# 执行
+# ENTRYPOINT ["bash", "/home/paas/stable-diffusion-webui/bootstrap.sh"]
+ENTRYPOINT ["python", "/home/paas/stable-diffusion-webui/webui.py", \
+"--xformers", "--port", "8000", "--listen", "--no-gradio-queue", \
+"--skip-prepare-environment", "--no-download-sd-model", \
+"--ckpt-dir", "/mnt/auto/sd/models/Stable-diffusion", \
+"--vae-dir", "/mnt/auto/sd/models/VAE", \
+"--lora-dir", "/mnt/auto/sd/models/Lora",\
+"--codeformer-models-path", "/mnt/auto/sd/models/Codeformer",\
+"--gfpgan-models-path", "/mnt/auto/sd/models/GFPGAN",\
+"--esrgan-models-path", "/mnt/auto/sd/models/ESRGAN",\
+"--bsrgan-models-path", "/mnt/auto/sd/models/BSRGAN",\
+"--realesrgan-models-path", "/mnt/auto/sd/models/RealESRGAN",\
+"--embeddings-dir", "/mnt/auto/sd/embeddings"]
