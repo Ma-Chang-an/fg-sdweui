@@ -30,7 +30,7 @@ while true; do
     NAS_MOUNTED=1
     exit
   fi
-  sleep10
+  sleep 10
   if [ $(date +%s) -gt 300 ]; then
     echo "Exiting loop after5 minutes"
     exit
