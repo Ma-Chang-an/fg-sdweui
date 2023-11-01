@@ -24,17 +24,19 @@ cp -R ${ROOT}/extensions-builtin/* ${SD_BUILTIN}/extensions-builtin/
 
 NAS_DIR="/mnt/auto/sd"
 NAS_MOUNTED=0
-while true; do
-  if [ -d "/mnt/auto" ]; then
-    echo "/mnt/auto exists, setting NAS_MOUNTED to1"
-    NAS_MOUNTED=1
-    exit
-  fi
-  sleep 10
-  if [ $(date +%s) -gt 300 ]; then
-    echo "Exiting loop after5 minutes"
-    exit
-  fi
+count=0
+while [ $count -lt 30 ]
+do
+    if [ -d "/mnt/auto" ]
+    then
+        echo "Directory /mnt/auto exists. Exiting."
+        NAS_MOUNTED=1
+	exit 0
+    else
+        echo "Directory /mnt/auto does not exist. Waiting for 10 seconds."
+        sleep 10
+        count=$((count+1))
+    fi
 done
 
 if [ "$NAS_MOUNTED" == "1" ]; then

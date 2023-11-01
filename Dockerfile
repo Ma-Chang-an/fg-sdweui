@@ -103,7 +103,6 @@ RUN --mount=type=cache,target=/var/cache/apt \
         wget git fonts-dejavu-core rsync git jq moreutils aria2 \
         ffmpeg libglfw3-dev libgles2-mesa-dev pkg-config libcairo2 libcairo2-dev \
         gcc g++ procps unzip curl python3 python3-pip
-# libpython3.9-dev
 
 RUN ln -sfn /usr/bin/python3 /usr/bin/python
 
@@ -111,7 +110,7 @@ ENV ROOT=${HOME}/stable-diffusion-webui
 
 COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /stable-diffusion-webui ${ROOT}
 COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /repositories/ ${ROOT}/repositories/
-COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /clip-vit-large-patch14 ${HOME}/clip-vit-large-patch14
+COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /clip-vit-large-patch14 ${HOME}/openai/clip-vit-large-patch14
 
 RUN sed -i ${ROOT}/repositories/stable-diffusion-stability-ai/ldm/modules/encoders/modules.py -e 's@openai/clip-vit-large-patch14@/home/paas/openai/clip-vit-large-patch14@'
 
@@ -173,6 +172,7 @@ COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /buffalo_l /root/.insightf
 
 # adetailer 65M
 COPY --from=extensions --chown=${USER_NAME}:${GROUP_NAME} /models--Bingsu--adetailer /root/.cache/huggingface/hub/
+COPY --chown=${USER_NAME}:${GROUP_NAME} ./entrypoint.sh ${HOME}/entrypoint.sh
 
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ENV NVIDIA_VISIBLE_DEVICES=all
@@ -181,19 +181,7 @@ EXPOSE 8000
 
 WORKDIR ${ROOT}
 
-CMD nohup sh /home/paas/mount.sh &
-ENTRYPOINT ["python", "/home/paas/stable-diffusion-webui/webui.py", \
-"--xformers", "--port", "8000", "--listen", \
-"--skip-prepare-environment", "--no-download-sd-model", \
-"--ckpt-dir", "/mnt/auto/sd/models/Stable-diffusion", \
-"--vae-dir", "/mnt/auto/sd/models/VAE", \
-"--lora-dir", "/mnt/auto/sd/models/Lora",\
-"--codeformer-models-path", "/mnt/auto/sd/models/Codeformer",\
-"--gfpgan-models-path", "/mnt/auto/sd/models/GFPGAN",\
-"--esrgan-models-path", "/mnt/auto/sd/models/ESRGAN",\
-"--bsrgan-models-path", "/mnt/auto/sd/models/BSRGAN",\
-"--realesrgan-models-path", "/mnt/auto/sd/models/RealESRGAN",\
-"--embeddings-dir", "/mnt/auto/sd/embeddings"]
+CMD bash ${HOME}/entrypoint.sh
 
 
 FROM alpine:3.17 as model-base-download
@@ -239,7 +227,6 @@ FROM model-base as sd1.5
 # 4G
 COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /sd-v1-5-inpainting.ckpt ${ROOT}/models/Stable-diffusion/sd-v1-5-inpainting.ckpt
 
-COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /clip-vit-large-patch14 ${HOME}/openai/clip-vit-large-patch14
 USER ${USER_NAME}:${GROUP_NAME}
 
 FROM model-base as anime
@@ -265,6 +252,4 @@ COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /chilloutmix_
 RUN sed -i ${ROOT}/config.json -e 's@sd-v1-5-inpainting.ckpt \[c6bbc15e32\]@chilloutmix_NiPrunedFp16Fix.safetensors \[59ffe2243a\]@'
 RUN sed -i ${ROOT}/config.json -e 's@c6bbc15e3224e6973459ba78de4998b80b50112b0ae5b5c67113d56b4e366b19@59ffe2243a25c9fe137d590eb3c5c3d3273f1b4c86252da11bbdc9568773da0c@'
 
-COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /clip-vit-large-patch14 ${HOME}/openai/clip-vit-large-patch14
- 
 USER ${USER_NAME}:${GROUP_NAME}
