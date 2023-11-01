@@ -23,23 +23,8 @@ cp -R ${ROOT}/scripts ${SD_BUILTIN}/scripts
 cp -R ${ROOT}/extensions-builtin/* ${SD_BUILTIN}/extensions-builtin/
 
 NAS_DIR="/mnt/auto/sd"
-NAS_MOUNTED=0
-count=0
-while [ $count -lt 30 ]
-do
-    if [ -d "/mnt/auto" ]
-    then
-        echo "Directory /mnt/auto exists. Exiting."
-        NAS_MOUNTED=1
-	exit 0
-    else
-        echo "Directory /mnt/auto does not exist. Waiting for 10 seconds."
-        sleep 10
-        count=$((count+1))
-    fi
-done
 
-if [ "$NAS_MOUNTED" == "1" ]; then
+function mount_pro() {
   mkdir -p "${NAS_DIR}"
 
 
@@ -99,8 +84,21 @@ if [ "$NAS_MOUNTED" == "1" ]; then
   for to_path in "${!MOUNTS[@]}"; do
     mount_file "${MOUNTS[${to_path}]}" "${to_path}"
   done
-fi
+}
 
+count=0
+while [ $count -lt 6 ]
+do
+    if [ -d "/mnt/auto" ]
+    then
+        echo "Directory /mnt/auto exists. Begin Mount."
+        mount_pro
+        exit 0
+    else
+        echo "Directory /mnt/auto does not exist. Waiting for 10 seconds."
+        sleep 10
+        count=$((count+1))
+    fi
+done
 
-
-
+echo "Directory /mnt/auto does not exist. Maximum wait time exceeded."
