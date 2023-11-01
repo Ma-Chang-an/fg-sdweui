@@ -137,7 +137,7 @@ COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource/ui-config.json ${ROOT}/ui-
 COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource/extensions ${ROOT}/extensionsn
 COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource/localizations ${ROOT}/localizations
 COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource ${SD_BUILTIN}
-COPY --chown=${USER_NAME}:${GROUP_NAME} ./mount.sh ${HOME}/mount.sh
+#COPY --chown=${USER_NAME}:${GROUP_NAME} ./mount.sh ${HOME}/mount.sh
 
 # 中文提示词翻译 299M
 # COPY --from=extensions /sd-prompt-translator  ${SD_BUILTIN}/extensions/sd-prompt-translator/scripts/models
