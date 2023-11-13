@@ -151,6 +151,10 @@ COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /codeformer-v0.1.0.pth ${R
 COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detection_Resnet50_Final.pth ${ROOT}/repositories/CodeFormer/weights/facelib/detection_Resnet50_Final.pth
 COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsenet.pth ${ROOT}/repositories/CodeFormer/weights/facelib/parsing_parsenet.pth
 
+COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /codeformer-v0.1.0.pth $SD_BUILTIN/models/Codeformer/codeformer-v0.1.0.pth
+COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detection_Resnet50_Final.pth ${SD_BUILTIN}/repositories/CodeFormer/weights/facelib/detection_Resnet50_Final.pth
+COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsenet.pth ${SD_BUILTIN}/repositories/CodeFormer/weights/facelib/parsing_parsenet.pth
+
 # CLIP 反向推导提示词 614M? 890M?
 # https://github.com/AUTOMATIC1111/stable-diffusion-webui/discussions/10574
 # COPY --from=models /model_base_caption_capfilt_large.pth ${SD_BUILTIN}/models/BLIP/model_base_caption_capfilt_large.pth 
