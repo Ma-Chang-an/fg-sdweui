@@ -139,8 +139,8 @@ COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource ${SD_BUILTIN}
 #COPY --chown=${USER_NAME}:${GROUP_NAME} ./mount.sh ${HOME}/mount.sh
 
 # 中文提示词翻译 299M
-COPY --from=extensions /sd-prompt-translator  ${ROOT}/extensions/sd-prompt-translator/scripts/models
-COPY --from=extensions /bert-base-uncased-cache/*  /root/.cache/huggingface/hub/
+COPY --from=extensions --chown=${USER_NAME}:${GROUP_NAME} /sd-prompt-translator ${ROOT}/extensions/sd-prompt-translator/scripts/models
+COPY --from=extensions --chown=${USER_NAME}:${GROUP_NAME} /bert-base-uncased-cache/*  /root/.cache/huggingface/hub/
 
 # 面部修复 + 高分辨率修复 359M + 104M + 81.4M
 COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /codeformer-v0.1.0.pth ${ROOT}/models/Codeformer/codeformer-v0.1.0.pth
