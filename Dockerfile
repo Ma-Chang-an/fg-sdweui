@@ -151,9 +151,9 @@ COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /codeformer-v0.1.0.pth ${R
 COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detection_Resnet50_Final.pth ${ROOT}/repositories/CodeFormer/weights/facelib/detection_Resnet50_Final.pth
 COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsenet.pth ${ROOT}/repositories/CodeFormer/weights/facelib/parsing_parsenet.pth
 
-COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /codeformer-v0.1.0.pth $SD_BUILTIN/models/Codeformer/codeformer-v0.1.0.pth
-COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detection_Resnet50_Final.pth ${SD_BUILTIN}/repositories/CodeFormer/weights/facelib/detection_Resnet50_Final.pth
-COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsenet.pth ${SD_BUILTIN}/repositories/CodeFormer/weights/facelib/parsing_parsenet.pth
+#COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /codeformer-v0.1.0.pth ${SD_BUILTIN}/models/Codeformer/codeformer-v0.1.0.pth
+#COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detection_Resnet50_Final.pth ${SD_BUILTIN}/repositories/CodeFormer/weights/facelib/detection_Resnet50_Final.pth
+#COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsenet.pth ${SD_BUILTIN}/repositories/CodeFormer/weights/facelib/parsing_parsenet.pth
 
 # CLIP 反向推导提示词 614M? 890M?
 # https://github.com/AUTOMATIC1111/stable-diffusion-webui/discussions/10574
@@ -255,5 +255,9 @@ COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /chilloutmix_
 
 RUN sed -i ${ROOT}/config.json -e 's@sd-v1-5-inpainting.ckpt \[c6bbc15e32\]@chilloutmix_NiPrunedFp16Fix.safetensors \[59ffe2243a\]@'
 RUN sed -i ${ROOT}/config.json -e 's@c6bbc15e3224e6973459ba78de4998b80b50112b0ae5b5c67113d56b4e366b19@59ffe2243a25c9fe137d590eb3c5c3d3273f1b4c86252da11bbdc9568773da0c@'
+
+COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /codeformer-v0.1.0.pth ${SD_BUILTIN}/models/Codeformer/codeformer-v0.1.0.pth
+COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detection_Resnet50_Final.pth ${SD_BUILTIN}/repositories/CodeFormer/weights/facelib/detection_Resnet50_Final.pth
+COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsenet.pth ${SD_BUILTIN}/repositories/CodeFormer/weights/facelib/parsing_parsenet.pth
 
 USER ${USER_NAME}:${GROUP_NAME}

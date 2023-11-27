@@ -89,7 +89,7 @@ function mount_pro() {
 }
 
 count=0
-while [ $count -lt 10 ]
+while [ $count -lt 15 ]
 do
     if [ -d "/mnt/auto" ]
     then
@@ -102,7 +102,7 @@ do
         count=$((count+1))
     fi
 done
-if [ $count -ge 10 ]; then
+if [ $count -ge 15 ]; then
   echo "Directory /mnt/auto does not exist. Maximum wait time exceeded."
 fi
 
