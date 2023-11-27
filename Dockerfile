@@ -160,9 +160,9 @@ COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsenet.pth ${SD
 
 # roop 554M + 
 COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /inswapper_128.onnx ${ROOT}/models/roop/inswapper_128.onnx
-COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detector.onnx /root/.ifnude/detector.onnx
+COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detector.onnx ${HOME}/.ifnude/detector.onnx
 # 275M
-COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /buffalo_l /root/.insightface/models
+COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /buffalo_l ${HOME}/.insightface/models
     
 
 # controlnet 1.3G 2K 1.3G
