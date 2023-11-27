@@ -57,7 +57,6 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 COPY ./init /init
 RUN mkdir -p /sd-prompt-translator && python /init/sd-prompt-translator.py /sd-prompt-translator
 RUN mkdir -p /bert-base-uncased-cache && python /init/bert-base-uncased.py /bert-base-uncased-cache
-#RUN mkdir -p /clip-vit-large-patch14 && python /init/clip-vit-large-patch14.py /clip-vit-large-patch14
 RUN mkdir -p /models--Bingsu--adetailer && python /init/bingsu-adetailer.py /models--Bingsu--adetailer
 
 # ############################# 
@@ -134,26 +133,23 @@ ENV SD_BUILTIN=/built-in
 
 COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource/config.json ${ROOT}/config.json
 COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource/ui-config.json ${ROOT}/ui-config.json
-COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource/extensions ${ROOT}/extensionsn
+COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource/extensions ${ROOT}/extensions
 COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource/localizations ${ROOT}/localizations
 COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource ${SD_BUILTIN}
 #COPY --chown=${USER_NAME}:${GROUP_NAME} ./mount.sh ${HOME}/mount.sh
 
 # 中文提示词翻译 299M
-# COPY --from=extensions /sd-prompt-translator  ${SD_BUILTIN}/extensions/sd-prompt-translator/scripts/models
-# COPY --from=extensions /bert-base-uncased-cache/*  ${SD_BUILTIN}/root/.cache/huggingface/hub/
-
-# 启动的时候会下载这个
-#COPY --from=extensions --chown=${USER_NAME}:${GROUP_NAME} /clip-vit-large-patch14  ${HOME}/clip-vit-large-patch14
+COPY --from=extensions /sd-prompt-translator  ${ROOT}/extensions/sd-prompt-translator/scripts/models
+COPY --from=extensions /bert-base-uncased-cache/*  /root/.cache/huggingface/hub/
 
 # 面部修复 + 高分辨率修复 359M + 104M + 81.4M
 COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /codeformer-v0.1.0.pth ${ROOT}/models/Codeformer/codeformer-v0.1.0.pth
 COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detection_Resnet50_Final.pth ${ROOT}/repositories/CodeFormer/weights/facelib/detection_Resnet50_Final.pth
 COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsenet.pth ${ROOT}/repositories/CodeFormer/weights/facelib/parsing_parsenet.pth
 
-#COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /codeformer-v0.1.0.pth ${SD_BUILTIN}/models/Codeformer/codeformer-v0.1.0.pth
-#COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detection_Resnet50_Final.pth ${SD_BUILTIN}/repositories/CodeFormer/weights/facelib/detection_Resnet50_Final.pth
-#COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsenet.pth ${SD_BUILTIN}/repositories/CodeFormer/weights/facelib/parsing_parsenet.pth
+COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /codeformer-v0.1.0.pth ${SD_BUILTIN}/models/Codeformer/codeformer-v0.1.0.pth
+COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detection_Resnet50_Final.pth ${SD_BUILTIN}/repositories/CodeFormer/weights/facelib/detection_Resnet50_Final.pth
+COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsenet.pth ${SD_BUILTIN}/repositories/CodeFormer/weights/facelib/parsing_parsenet.pth
 
 # CLIP 反向推导提示词 614M? 890M?
 # https://github.com/AUTOMATIC1111/stable-diffusion-webui/discussions/10574
@@ -255,9 +251,5 @@ COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /chilloutmix_
 
 RUN sed -i ${ROOT}/config.json -e 's@sd-v1-5-inpainting.ckpt \[c6bbc15e32\]@chilloutmix_NiPrunedFp16Fix.safetensors \[59ffe2243a\]@'
 RUN sed -i ${ROOT}/config.json -e 's@c6bbc15e3224e6973459ba78de4998b80b50112b0ae5b5c67113d56b4e366b19@59ffe2243a25c9fe137d590eb3c5c3d3273f1b4c86252da11bbdc9568773da0c@'
-
-COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /codeformer-v0.1.0.pth ${SD_BUILTIN}/models/Codeformer/codeformer-v0.1.0.pth
-COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detection_Resnet50_Final.pth ${SD_BUILTIN}/repositories/CodeFormer/weights/facelib/detection_Resnet50_Final.pth
-COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsenet.pth ${SD_BUILTIN}/repositories/CodeFormer/weights/facelib/parsing_parsenet.pth
 
 USER ${USER_NAME}:${GROUP_NAME}
