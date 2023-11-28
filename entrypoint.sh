@@ -2,7 +2,7 @@
 
 set -Eeuox pipefail
 
-#bash /home/paas/mount.sh
+NAS_DIR="/mnt/auto/sd"
 
 function mount_file() {
   echo Mount $1 to $2
@@ -21,14 +21,8 @@ function mount_file() {
   ln -sT "${SRC}" "${DST}"
 }
 
-cp -R ${ROOT}/scripts ${SD_BUILTIN}/scripts
-cp -R ${ROOT}/extensions-builtin/* ${SD_BUILTIN}/extensions-builtin/
-
-NAS_DIR="/mnt/auto/sd"
-
 function mount_pro() {
   mkdir -p "${NAS_DIR}"
-
 
   # 去除无用的软链接
   find -L . -type l -delete
@@ -59,33 +53,6 @@ function mount_pro() {
     echo "no ui-config.json, copy it"
     cp "${SD_BUILTIN}/ui-config.json" "${NAS_DIR}/ui-config.json"
   fi
-
-  if [ ! -e "${NAS_DIR}/styles.csv" ]; then
-    echo "no styles.csv, create it"
-    touch "${NAS_DIR}/styles.csv"
-  fi
-  declare -A MOUNTS
-
-  MOUNTS["${ROOT}/models"]="${NAS_DIR}/models"
-  MOUNTS["${ROOT}/localizations"]="${NAS_DIR}/localizations"
-  MOUNTS["${ROOT}/configs"]="${NAS_DIR}/configs"
-  MOUNTS["${ROOT}/extensions-builtin"]="${NAS_DIR}/extensions-builtin"
-  MOUNTS["${ROOT}/embeddings"]="${NAS_DIR}/embeddings"
-  MOUNTS["${ROOT}/config.json"]="${NAS_DIR}/config.json"
-  MOUNTS["${ROOT}/ui-config.json"]="${NAS_DIR}/ui-config.json"
-  MOUNTS["${ROOT}/extensions"]="${NAS_DIR}/extensions"
-  MOUNTS["${ROOT}/outputs"]="${NAS_DIR}/outputs"
-  MOUNTS["${ROOT}/styles.csv"]="${NAS_DIR}/styles.csv"
-  MOUNTS["${ROOT}/scripts"]="${NAS_DIR}/scripts"
-  MOUNTS["${ROOT}/textual_inversion_templates"]="${NAS_DIR}/textual_inversion_templates"
-  # MOUNTS["${ROOT}/javascript"]="${NAS_DIR}/javascript"
-  # MOUNTS["${ROOT}/html"]="${NAS_DIR}/html"
-  MOUNTS["${ROOT}/repositories/CodeFormer/weights/facelib"]="${NAS_DIR}/repositories/CodeFormer/weights/facelib"
-
-
-  for to_path in "${!MOUNTS[@]}"; do
-    mount_file "${MOUNTS[${to_path}]}" "${to_path}"
-  done
 }
 
 count=0
@@ -95,7 +62,7 @@ do
     then
         echo "Directory /mnt/auto exists. Begin Mount."
         mount_pro
-	break
+	      break
     else
         echo "Directory /mnt/auto does not exist. Waiting for 1 seconds."
         sleep 1
@@ -104,7 +71,35 @@ do
 done
 if [ $count -ge 15 ]; then
   echo "Directory /mnt/auto does not exist. Maximum wait time exceeded."
+  mount_file "$SD_BUILTIN" "${NAS_DIR}"
 fi
+
+if [ ! -e "${NAS_DIR}/styles.csv" ]; then
+  echo "no styles.csv, create it"
+  touch "${NAS_DIR}/styles.csv"
+fi
+declare -A MOUNTS
+
+MOUNTS["${HOME}"]="${NAS_DIR}/root"
+MOUNTS["${ROOT}/models"]="${NAS_DIR}/models"
+MOUNTS["${ROOT}/localizations"]="${NAS_DIR}/localizations"
+MOUNTS["${ROOT}/configs"]="${NAS_DIR}/configs"
+MOUNTS["${ROOT}/extensions-builtin"]="${NAS_DIR}/extensions-builtin"
+MOUNTS["${ROOT}/embeddings"]="${NAS_DIR}/embeddings"
+MOUNTS["${ROOT}/config.json"]="${NAS_DIR}/config.json"
+MOUNTS["${ROOT}/ui-config.json"]="${NAS_DIR}/ui-config.json"
+MOUNTS["${ROOT}/extensions"]="${NAS_DIR}/extensions"
+MOUNTS["${ROOT}/outputs"]="${NAS_DIR}/outputs"
+MOUNTS["${ROOT}/styles.csv"]="${NAS_DIR}/styles.csv"
+MOUNTS["${ROOT}/scripts"]="${NAS_DIR}/scripts"
+MOUNTS["${ROOT}/textual_inversion_templates"]="${NAS_DIR}/textual_inversion_templates"
+MOUNTS["${ROOT}/repositories/CodeFormer/weights/facelib"]="${NAS_DIR}/repositories/CodeFormer/weights/facelib"
+
+
+for to_path in "${!MOUNTS[@]}"; do
+  mount_file "${MOUNTS[${to_path}]}" "${to_path}"
+done
+
 CLI_ARGS="${CLI_ARGS:---xformers --enable-insecure-extension-access --skip-version-check --no-download-sd-model --skip-prepare-environment --no-gradio-queue}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 AD_NO_HUGGINGFACE=""

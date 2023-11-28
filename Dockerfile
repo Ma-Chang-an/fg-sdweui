@@ -105,13 +105,11 @@ RUN --mount=type=cache,target=/var/cache/apt \
 
 RUN ln -sfn /usr/bin/python3 /usr/bin/python
 
-ENV ROOT=${HOME}/stable-diffusion-webui
+ENV ROOT=/stable-diffusion-webui
 
 COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /stable-diffusion-webui ${ROOT}
 COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /repositories/ ${ROOT}/repositories/
-COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /clip-vit-large-patch14 ${HOME}/openai/clip-vit-large-patch14
-
-RUN sed -i ${ROOT}/repositories/stable-diffusion-stability-ai/ldm/modules/encoders/modules.py -e 's@openai/clip-vit-large-patch14@/home/paas/openai/clip-vit-large-patch14@'
+COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /clip-vit-large-patch14 ${SD_BUILTIN}/root/.cache/huggingface/hub/
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     cd ${ROOT} && \
@@ -131,22 +129,15 @@ FROM sd_base as base
 
 ENV SD_BUILTIN=/built-in
 
-COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource/config.json ${ROOT}/config.json
-COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource/ui-config.json ${ROOT}/ui-config.json
-COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource/extensions ${ROOT}/extensions
-COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource/localizations ${ROOT}/localizations
 COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource ${SD_BUILTIN}
-#COPY --chown=${USER_NAME}:${GROUP_NAME} ./mount.sh ${HOME}/mount.sh
+COPY --from=sd_base --chown=${USER_NAME}:${GROUP_NAME} ${ROOT}/scripts ${SD_BUILTIN}/scripts
+COPY --from=sd_base --chown=${USER_NAME}:${GROUP_NAME} ${ROOT}/extensions-builtin/* ${SD_BUILTIN}/extensions-builtin/
 
 # 中文提示词翻译 299M
-COPY --from=extensions --chown=${USER_NAME}:${GROUP_NAME} /sd-prompt-translator ${ROOT}/extensions/sd-prompt-translator/scripts/models
-COPY --from=extensions --chown=${USER_NAME}:${GROUP_NAME} /bert-base-uncased-cache/*  ${HOME}/.cache/huggingface/hub/
+COPY --from=extensions --chown=${USER_NAME}:${GROUP_NAME} /sd-prompt-translator ${SD_BUILTIN}/extensions/sd-prompt-translator/scripts/models
+COPY --from=extensions --chown=${USER_NAME}:${GROUP_NAME} /bert-base-uncased-cache/*  ${SD_BUILTIN}/root/.cache/huggingface/hub/
 
 # 面部修复 + 高分辨率修复 359M + 104M + 81.4M
-COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /codeformer-v0.1.0.pth ${ROOT}/models/Codeformer/codeformer-v0.1.0.pth
-COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detection_Resnet50_Final.pth ${ROOT}/repositories/CodeFormer/weights/facelib/detection_Resnet50_Final.pth
-COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsenet.pth ${ROOT}/repositories/CodeFormer/weights/facelib/parsing_parsenet.pth
-
 COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /codeformer-v0.1.0.pth ${SD_BUILTIN}/models/Codeformer/codeformer-v0.1.0.pth
 COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detection_Resnet50_Final.pth ${SD_BUILTIN}/repositories/CodeFormer/weights/facelib/detection_Resnet50_Final.pth
 COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsenet.pth ${SD_BUILTIN}/repositories/CodeFormer/weights/facelib/parsing_parsenet.pth
@@ -156,23 +147,22 @@ COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsenet.pth ${SD
 # COPY --from=models /model_base_caption_capfilt_large.pth ${SD_BUILTIN}/models/BLIP/model_base_caption_capfilt_large.pth 
 
 # DeepBooru 反向推导提示词 614M
-# COPY --from=models /model-resnet_custom_v3.pt ${ROOT}/models/torch_deepdanbooru/model-resnet_custom_v3.pt
+# COPY --from=models /model-resnet_custom_v3.pt ${SD_BUILTIN}/models/torch_deepdanbooru/model-resnet_custom_v3.pt
 
 # roop 554M + 
-COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /inswapper_128.onnx ${ROOT}/models/roop/inswapper_128.onnx
-COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detector.onnx ${HOME}/.ifnude/detector.onnx
+COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /inswapper_128.onnx ${SD_BUILTIN}/models/roop/inswapper_128.onnx
+COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detector.onnx ${SD_BUILTIN}/root/.ifnude/detector.onnx
 # 275M
-COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /buffalo_l ${HOME}/.insightface/models
-    
+COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /buffalo_l ${SD_BUILTIN}/root/.insightface/models
 
 # controlnet 1.3G 2K 1.3G
-# COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /control_v11p_sd15_scribble.pth ${ROOT}/models/ControlNet/control_v11p_sd15_scribble.pth
-# COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /control_v11p_sd15_scribble.yaml ${ROOT}/models/ControlNet/control_v11p_sd15_scribble.yaml
-# COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /control_v1p_sd15_illumination.safetensors ${ROOT}/models/ControlNet/control_v1p_sd15_illumination.safetensors
+# COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /control_v11p_sd15_scribble.pth ${SD_BUILTIN}/models/ControlNet/control_v11p_sd15_scribble.pth
+# COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /control_v11p_sd15_scribble.yaml ${SD_BUILTIN}/models/ControlNet/control_v11p_sd15_scribble.yaml
+# COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /control_v1p_sd15_illumination.safetensors ${SD_BUILTIN}/models/ControlNet/control_v1p_sd15_illumination.safetensors
 
 # adetailer 65M
-COPY --from=extensions --chown=${USER_NAME}:${GROUP_NAME} /models--Bingsu--adetailer ${HOME}/.cache/huggingface/hub/
-COPY --chown=${USER_NAME}:${GROUP_NAME} ./entrypoint.sh ${HOME}/entrypoint.sh
+COPY --from=extensions --chown=${USER_NAME}:${GROUP_NAME} /models--Bingsu--adetailer ${SD_BUILTIN}/root/.cache/huggingface/hub/
+COPY --chown=${USER_NAME}:${GROUP_NAME} ./entrypoint.sh ${ROOT}/entrypoint.sh
 
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ENV NVIDIA_VISIBLE_DEVICES=all
@@ -181,7 +171,7 @@ EXPOSE 8000
 
 WORKDIR ${ROOT}
 
-CMD bash ${HOME}/entrypoint.sh
+CMD bash ${ROOT}/entrypoint.sh
 
 
 FROM alpine:3.17 as model-base-download
@@ -210,46 +200,46 @@ RUN aria2c -x 16 --dir "/" --out "Colorwater_v4.safetensors" "https://civitai.co
 FROM base as model-base
 
 # 386M
-COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /cIF8Anime2.43ol.ckpt ${ROOT}/models/VAE/cIF8Anime2.43ol.ckpt
+COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /cIF8Anime2.43ol.ckpt ${SD_BUILTIN}/models/VAE/cIF8Anime2.43ol.ckpt
 # 144M
-COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /moxin.safetensors ${ROOT}/models/Lora/moxin.safetensors
+COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /moxin.safetensors ${SD_BUILTIN}/models/Lora/moxin.safetensors
 # 144M
-COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /blingdbox_v1_mix.safetensors ${ROOT}/models/Lora/blingdbox_v1_mix.safetensors
+COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /blingdbox_v1_mix.safetensors ${SD_BUILTIN}/models/Lora/blingdbox_v1_mix.safetensors
 # 144M
-COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /GachaSpliash4.safetensors ${ROOT}/models/Lora/GachaSpliash4.safetensors
+COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /GachaSpliash4.safetensors ${SD_BUILTIN}/models/Lora/GachaSpliash4.safetensors
 # 144M
-COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /Colorwater_v4.safetensors ${ROOT}/models/Lora/Colorwater_v4.safetensors 
+COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /Colorwater_v4.safetensors ${SD_BUILTIN}/models/Lora/Colorwater_v4.safetensors 
 
-RUN sed -i ${ROOT}/ui-config.json -e 's@"txt2img/Prompt/value": ""@"txt2img/Prompt/value": "masterpiece, best quality, very detailed, extremely detailed beautiful, super detailed, tousled hair, illustration, dynamic angles, girly, fashion clothing, standing, mannequin, looking at viewer, interview, beach, beautiful detailed eyes, exquisitely beautiful face, floating, high saturation, beautiful and detailed light and shadow"@'
-RUN sed -i ${ROOT}/ui-config.json -e 's@"txt2img/Negative prompt/value": ""@"txt2img/Negative prompt/value": "loli,nsfw,logo,text,badhandv4,EasyNegative,ng_deepnegative_v1_75t,rev2-badprompt,verybadimagenegative_v1.3,negative_hand-neg,mutated hands and fingers,poorly drawn face,extra limb,missing limb,disconnected limbs,malformed hands,ugly"@'
+RUN sed -i ${SD_BUILTIN}/ui-config.json -e 's@"txt2img/Prompt/value": ""@"txt2img/Prompt/value": "masterpiece, best quality, very detailed, extremely detailed beautiful, super detailed, tousled hair, illustration, dynamic angles, girly, fashion clothing, standing, mannequin, looking at viewer, interview, beach, beautiful detailed eyes, exquisitely beautiful face, floating, high saturation, beautiful and detailed light and shadow"@'
+RUN sed -i ${SD_BUILTIN}/ui-config.json -e 's@"txt2img/Negative prompt/value": ""@"txt2img/Negative prompt/value": "loli,nsfw,logo,text,badhandv4,EasyNegative,ng_deepnegative_v1_75t,rev2-badprompt,verybadimagenegative_v1.3,negative_hand-neg,mutated hands and fingers,poorly drawn face,extra limb,missing limb,disconnected limbs,malformed hands,ugly"@'
 
 FROM model-base as sd1.5
 # 4G
-COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /sd-v1-5-inpainting.ckpt ${ROOT}/models/Stable-diffusion/sd-v1-5-inpainting.ckpt
+COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /sd-v1-5-inpainting.ckpt ${SD_BUILTIN}/models/Stable-diffusion/sd-v1-5-inpainting.ckpt
 
 USER ${USER_NAME}:${GROUP_NAME}
 
 FROM model-base as anime
 # 4G
-COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /mixProV4.Cqhm.safetensors ${ROOT}/models/Stable-diffusion/mixProV4.Cqhm.safetensors
+COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /mixProV4.Cqhm.safetensors ${SD_BUILTIN}/models/Stable-diffusion/mixProV4.Cqhm.safetensors
 
-RUN sed -i ${ROOT}/config.json -e 's/sd-v1-5-inpainting.ckpt \[c6bbc15e32\]/mixProV4.Cqhm.safetensors \[61e23e57ea\]/'
-RUN sed -i ${ROOT}/config.json -e 's/c6bbc15e3224e6973459ba78de4998b80b50112b0ae5b5c67113d56b4e366b19/61e23e57ea13765152435b42d55e7062de188ca3234edb82d751cf52f7667d4f/'
-RUN sed -i ${ROOT}/config.json -e 's/Automatic/cIF8Anime2.43ol.ckpt/'
+RUN sed -i ${SD_BUILTIN}/config.json -e 's/sd-v1-5-inpainting.ckpt \[c6bbc15e32\]/mixProV4.Cqhm.safetensors \[61e23e57ea\]/'
+RUN sed -i ${SD_BUILTIN}/config.json -e 's/c6bbc15e3224e6973459ba78de4998b80b50112b0ae5b5c67113d56b4e366b19/61e23e57ea13765152435b42d55e7062de188ca3234edb82d751cf52f7667d4f/'
+RUN sed -i ${SD_BUILTIN}/config.json -e 's/Automatic/cIF8Anime2.43ol.ckpt/'
 
 USER ${USER_NAME}:${GROUP_NAME}
 
 FROM model-base as realman
 # 144M
-COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /ChinaDollLikeness.safetensors ${ROOT}/models/Lora/ChinaDollLikeness.safetensors
+COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /ChinaDollLikeness.safetensors ${SD_BUILTIN}/models/Lora/ChinaDollLikeness.safetensors
 # 144M
-COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /KoreanDollLikeness.safetensors ${ROOT}/models/Lora/KoreanDollLikeness.safetensors
+COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /KoreanDollLikeness.safetensors ${SD_BUILTIN}/models/Lora/KoreanDollLikeness.safetensors
 # 144M
-COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /JapaneseDollLikeness.safetensors ${ROOT}/models/Lora/JapaneseDollLikeness.safetensors
+COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /JapaneseDollLikeness.safetensors ${SD_BUILTIN}/models/Lora/JapaneseDollLikeness.safetensors
 # 2G
-COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /chilloutmix_NiPrunedFp16Fix.safetensors ${ROOT}/models/Stable-diffusion/chilloutmix_NiPrunedFp16Fix.safetensors
+COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /chilloutmix_NiPrunedFp16Fix.safetensors ${SD_BUILTIN}/models/Stable-diffusion/chilloutmix_NiPrunedFp16Fix.safetensors
 
-RUN sed -i ${ROOT}/config.json -e 's@sd-v1-5-inpainting.ckpt \[c6bbc15e32\]@chilloutmix_NiPrunedFp16Fix.safetensors \[59ffe2243a\]@'
-RUN sed -i ${ROOT}/config.json -e 's@c6bbc15e3224e6973459ba78de4998b80b50112b0ae5b5c67113d56b4e366b19@59ffe2243a25c9fe137d590eb3c5c3d3273f1b4c86252da11bbdc9568773da0c@'
+RUN sed -i ${SD_BUILTIN}/config.json -e 's@sd-v1-5-inpainting.ckpt \[c6bbc15e32\]@chilloutmix_NiPrunedFp16Fix.safetensors \[59ffe2243a\]@'
+RUN sed -i ${SD_BUILTIN}/config.json -e 's@c6bbc15e3224e6973459ba78de4998b80b50112b0ae5b5c67113d56b4e366b19@59ffe2243a25c9fe137d590eb3c5c3d3273f1b4c86252da11bbdc9568773da0c@'
 
 USER ${USER_NAME}:${GROUP_NAME}
