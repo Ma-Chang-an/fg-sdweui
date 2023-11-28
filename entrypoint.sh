@@ -106,4 +106,4 @@ if [ $count -ge 15 ]; then
   echo "Directory /mnt/auto does not exist. Maximum wait time exceeded."
 fi
 
-python webui.py --xformers --port 8000 --listen --skip-prepare-environment --no-download-sd-model --no-gradio-queue --enable-insecure-extension-access
+python webui.py --xformers --port 8000 --listen --skip-prepare-environment --no-download-sd-model --no-gradio-queue --enable-insecure-extension-access --ad-no-huggingface --skip-version-check
