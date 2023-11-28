@@ -112,16 +112,15 @@ AD_NO_HUGGINGFACE=""
 # 如果插件目录中包含adetailer
 if [ -d "${ROOT}/extensions/adetailer" ];then
   if [ -f ${ROOT}/config.json ]; then
-      # 则读取config.json中的disabled_extensions
-      disabled_extensions=$(awk -F '[:,]' '/disabled_extensions/{for(i=1;i<=NF;i++){if($i~/[a-zA-Z0-9_-]+/){print $i}}}' config.json)
-      # 如果adetailer
-      if [[ "$disabled_extensions" == *"adetailer"* ]]; then
-          echo "adetailer is in the disabled_extensions list."
-      # adetailer插件存在并且没有被禁用则将AD_NO_HUGGINGFACE设置为--ad-no-huggingface
-      else
-          echo "adetailer is not in the disabled_extensions list."
-          AD_NO_HUGGINGFACE="--ad-no-huggingface"
-      fi
+    # 读取JSON文件
+    json=$(cat ${ROOT}/config.json)
+    # 使用jq检查"disabled_extensions"数组中是否存在"adetailer"
+    if echo "$json" | jq -e '.disabled_extensions[] | select(.=="adetailer")' > /dev/null; then
+      echo "'adetailer' in 'disabled_extensions'"
+    else
+      echo "'adetailer' not in 'disabled_extensions'"
+      AD_NO_HUGGINGFACE="--ad-no-huggingface"
+    fi
   else
       echo "config.json file not found."
   fi
