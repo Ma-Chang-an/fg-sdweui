@@ -105,5 +105,31 @@ done
 if [ $count -ge 15 ]; then
   echo "Directory /mnt/auto does not exist. Maximum wait time exceeded."
 fi
+CLI_ARGS="${CLI_ARGS:---xformers --enable-insecure-extension-access --skip-version-check --no-download-sd-model --skip-prepare-environment --no-gradio-queue}"
+EXTRA_ARGS="${EXTRA_ARGS:-}"
+AD_NO_HUGGINGFACE=""
 
-python webui.py --xformers --port 8000 --listen --skip-prepare-environment --no-download-sd-model --no-gradio-queue --enable-insecure-extension-access --ad-no-huggingface --skip-version-check
+# 如果插件目录中包含adetailer
+if [-d "${ROOT}/extensions/adetailer"]
+then
+  if [ -f ${ROOT}/config.json ]; then
+      # 则读取config.json中的disabled_extensions
+      disabled_extensions=$(awk -F '[:,]' '/disabled_extensions/{for(i=1;i<=NF;i++){if($i~/[a-zA-Z0-9_-]+/){print $i}}}' config.json)
+      # 如果adetailer
+      if [[ "$disabled_extensions" == *"adetailer"* ]]; then
+          echo "adetailer is in the disabled_extensions list."
+      # adetailer插件存在并且没有被禁用则将AD_NO_HUGGINGFACE设置为--ad-no-huggingface
+      else
+          echo "adetailer is not in the disabled_extensions list."
+          AD_NO_HUGGINGFACE="--ad-no-huggingface"
+      fi
+  else
+      echo "config.json file not found."
+  fi
+fi
+
+export ARGS="${CLI_ARGS} ${EXTRA_ARGS}"
+
+echo "args: $ARGS"
+
+python webui.py --port 8000 --listen ${ARGS}
