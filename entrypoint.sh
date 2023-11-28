@@ -127,7 +127,7 @@ if [ -d "${ROOT}/extensions/adetailer" ];then
   fi
 fi
 
-export ARGS="${CLI_ARGS} ${EXTRA_ARGS}"
+export ARGS="${CLI_ARGS} ${EXTRA_ARGS} ${AD_NO_HUGGINGFACE}"
 
 echo "args: $ARGS"
 
