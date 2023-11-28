@@ -110,8 +110,7 @@ EXTRA_ARGS="${EXTRA_ARGS:-}"
 AD_NO_HUGGINGFACE=""
 
 # 如果插件目录中包含adetailer
-if [-d "${ROOT}/extensions/adetailer"]
-then
+if [ -d "${ROOT}/extensions/adetailer" ];then
   if [ -f ${ROOT}/config.json ]; then
       # 则读取config.json中的disabled_extensions
       disabled_extensions=$(awk -F '[:,]' '/disabled_extensions/{for(i=1;i<=NF;i++){if($i~/[a-zA-Z0-9_-]+/){print $i}}}' config.json)
