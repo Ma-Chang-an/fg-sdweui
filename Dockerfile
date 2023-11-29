@@ -34,16 +34,6 @@ RUN git lfs install
 
 RUN GIT_LFS_SKIP_SMUDGE=1 git clone https://huggingface.co/openai/clip-vit-large-patch14 /clip-vit-large-patch14
 
-############################# 
-#     download xformers     #
-#############################
-
-FROM alpine:3.17 as xformers
-
-RUN apk add --no-cache aria2
-RUN aria2c -x 5 --dir / --out wheel.whl 'https://github.com/AbdBarho/stable-diffusion-webui-docker/releases/download/5.0.3/xformers-0.0.20.dev528-cp310-cp310-manylinux2014_x86_64-pytorch2.whl'
-
-    
 # ############################# 
 # #     extension models     d#
 # #############################
@@ -78,6 +68,7 @@ RUN aria2c -x 8 --dir "/" --out "control_v11p_sd15_scribble.yaml" "https://huggi
 RUN aria2c -x 8 --dir "/" --out "control_v1p_sd15_illumination.safetensors" "https://huggingface.co/ioclab/ioc-controlnet/resolve/main/models/control_v1p_sd15_illumination.safetensors"
 RUN aria2c -x 8 --dir "/" --out "buffalo_l.zip" "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip"
 RUN unzip /buffalo_l.zip -d /buffalo_l
+RUN aria2c -x 8 --dir "/" --out "classes" "https://huggingface.co/s0md3v/nudity-checker/resolve/main/classes"
   
 # ############################# 
 # #           dist            #
@@ -109,19 +100,21 @@ ENV ROOT=/stable-diffusion-webui
 
 COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /stable-diffusion-webui ${ROOT}
 COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /repositories/ ${ROOT}/repositories/
-COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /clip-vit-large-patch14 ${SD_BUILTIN}/root/.cache/huggingface/hub/
+COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /clip-vit-large-patch14 ${HOME}/openai/clip-vit-large-patch14
+
+RUN sed -i ${ROOT}/repositories/stable-diffusion-stability-ai/ldm/modules/encoders/modules.py -e 's@openai/clip-vit-large-patch14@/home/paas/openai/clip-vit-large-patch14@'
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     cd ${ROOT} && \
     pip install -r requirements_versions.txt && \
     find ${ROOT}/repositories -name requirements.txt | xargs -I {} pip install -r {} || echo "failed" && \
-    pip install rich==13.4.2 numexpr matplotlib pandas av pims imageio_ffmpeg gdown mediapipe==0.10.2 \
-        ultralytics==8.0.145 py-cpuinfo protobuf==3.20 rembg==2.0.38 \
+    pip --timeout=100 install xformers==0.0.20 taming-transformers-rom1504 && \
+    pip --timeout=100 install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cu118 && \
+    pip --timeout=100 install rich==13.4.2 numexpr matplotlib pandas av pims imageio_ffmpeg gdown mediapipe==0.10.2 \
+        ultralytics==8.0.145 py-cpuinfo protobuf==3.20 rembg==2.0.38 httpx==0.24.1 \
         deepdanbooru onnxruntime-gpu jsonschema opencv_contrib_python opencv_python opencv_python_headless packaging Pillow tqdm \
         chardet PyExecJS lxml pathos cryptography openai aliyun-python-sdk-core aliyun-python-sdk-alimt send2trash \
-        insightface==0.7.3 tensorflow ifnude && \
-    pip install xformers==0.0.20 taming-transformers-rom1504 && \
-    pip install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cu118
+        insightface==0.7.3 tensorflow ifnude
 
 # ==========================
 
@@ -130,9 +123,11 @@ FROM sd_base as base
 ENV SD_BUILTIN=/built-in
 
 COPY --chown=${USER_NAME}:${GROUP_NAME} ./sd-resource ${SD_BUILTIN}
-COPY --from=sd_base --chown=${USER_NAME}:${GROUP_NAME} ${ROOT}/scripts ${SD_BUILTIN}/scripts
-COPY --from=sd_base --chown=${USER_NAME}:${GROUP_NAME} ${ROOT}/extensions-builtin/* ${SD_BUILTIN}/extensions-builtin/
-
+#COPY --from=sd_base --chown=${USER_NAME}:${GROUP_NAME} ${ROOT}/scripts ${SD_BUILTIN}/scripts
+#COPY --from=sd_base --chown=${USER_NAME}:${GROUP_NAME} ${ROOT}/extensions-builtin/* ${SD_BUILTIN}/extensions-builtin/
+RUN cp -R ${ROOT}/scripts ${SD_BUILTIN}/scripts && \
+    cp -R ${ROOT}/extensions-builtin/* ${SD_BUILTIN}/extensions-builtin/ && \
+    chown -R ${USER_NAME}:${GROUP_NAME} ${ROOT}/scripts ${SD_BUILTIN}/extensions-builtin
 # 中文提示词翻译 299M
 COPY --from=extensions --chown=${USER_NAME}:${GROUP_NAME} /sd-prompt-translator ${SD_BUILTIN}/extensions/sd-prompt-translator/scripts/models
 COPY --from=extensions --chown=${USER_NAME}:${GROUP_NAME} /bert-base-uncased-cache/*  ${SD_BUILTIN}/root/.cache/huggingface/hub/
@@ -152,8 +147,9 @@ COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsenet.pth ${SD
 # roop 554M + 
 COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /inswapper_128.onnx ${SD_BUILTIN}/models/roop/inswapper_128.onnx
 COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /detector.onnx ${SD_BUILTIN}/root/.ifnude/detector.onnx
+COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /classes ${SD_BUILTIN}/root/.ifnude/classes
 # 275M
-COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /buffalo_l ${SD_BUILTIN}/root/.insightface/models
+COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /buffalo_l ${SD_BUILTIN}/root/.insightface/models/buffalo_l
 
 # controlnet 1.3G 2K 1.3G
 # COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /control_v11p_sd15_scribble.pth ${SD_BUILTIN}/models/ControlNet/control_v11p_sd15_scribble.pth
@@ -242,4 +238,6 @@ COPY --from=model-base-download --chown=${USER_NAME}:${GROUP_NAME} /chilloutmix_
 RUN sed -i ${SD_BUILTIN}/config.json -e 's@sd-v1-5-inpainting.ckpt \[c6bbc15e32\]@chilloutmix_NiPrunedFp16Fix.safetensors \[59ffe2243a\]@'
 RUN sed -i ${SD_BUILTIN}/config.json -e 's@c6bbc15e3224e6973459ba78de4998b80b50112b0ae5b5c67113d56b4e366b19@59ffe2243a25c9fe137d590eb3c5c3d3273f1b4c86252da11bbdc9568773da0c@'
 
+RUN chown -R ${USER_NAME}:${GROUP_NAME} /mnt
+RUN chown -R ${USER_NAME}:${GROUP_NAME} /root
 USER ${USER_NAME}:${GROUP_NAME}

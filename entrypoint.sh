@@ -80,7 +80,14 @@ if [ ! -e "${NAS_DIR}/styles.csv" ]; then
 fi
 declare -A MOUNTS
 
-MOUNTS["${HOME}"]="${NAS_DIR}/root"
+# 遍历/mnt/auto/sd/root目录下的所有子目录和文件
+for file in ${NAS_DIR}/root/{*,.*}; do
+    if [ "$(basename "$file")" != "." ] && [ "$(basename "$file")" != ".." ] && [ "$(basename "$file")" != "*" ]; then
+        echo $(basename "$file");
+        MOUNTS["${HOME}/$(basename "$file")"]="$file"	
+    fi;
+done
+#MOUNTS["/root"]="${NAS_DIR}/root"
 MOUNTS["${ROOT}/models"]="${NAS_DIR}/models"
 MOUNTS["${ROOT}/localizations"]="${NAS_DIR}/localizations"
 MOUNTS["${ROOT}/configs"]="${NAS_DIR}/configs"
