@@ -191,8 +191,7 @@ RUN mkdir -p /models--Bingsu--adetailer && python /init/bingsu-adetailer.py /mod
 ############################# 
 #       基础 sd 镜像        #
 #############################
-FROM python:3.10.9-slim as sdwebui
-
+FROM nvidia/cuda:11.8.0-base-ubuntu22.04 as sdwebui
 
 ENV DEBIAN_FRONTEND=noninteractive PIP_PREFER_BINARY=1
 
@@ -207,22 +206,28 @@ ENV USER_NAME=paas
 ENV HOME=/home/paas
 
 RUN groupadd -g ${GROUP_ID} ${GROUP_NAME} && \
-    useradd -u ${USER_ID} -g ${GROUP_ID} ${USER_NAME}
+    useradd -m -u ${USER_ID} -g ${GROUP_ID} ${USER_NAME}
 
 RUN --mount=type=cache,target=/var/cache/apt \
     apt update && \
     apt install -y --no-install-recommends \
     wget git fonts-dejavu-core rsync git jq moreutils aria2 \
     ffmpeg libglfw3-dev libgles2-mesa-dev pkg-config libcairo2 libcairo2-dev \
-    libpython3.9-dev gcc g++ procps unzip curl
+    build-essential gcc g++ procps unzip curl python3 python3-pip
+
+RUN ln -sfn /usr/bin/python3 /usr/bin/python
 
 COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /stable-diffusion-webui ${ROOT}
 COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /repositories/ ${ROOT}/repositories/
 #COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /clip-vit-large-patch14 ${HOME}/openai/clip-vit-large-patch14
 
-#RUN sed -i ${ROOT}/repositories/stable-diffusion-stability-ai/ldm/modules/encoders/modules.py -e 's@openai/clip-vit-large-patch14@/home/paas/openai/clip-vit-large-patch14@'
+RUN sed -i ${ROOT}/repositories/stable-diffusion-stability-ai/ldm/modules/encoders/modules.py -e 's@openai/clip-vit-large-patch14@/home/paas/.cache/huggingface/hub/clip-vit-large-patch14@'
 
 # 其他必备的依赖
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip --timeout=120 install xformers==0.0.20 taming-transformers-rom1504
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip --timeout=120 install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cu118
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --upgrade pip && \
     pip --timeout=120 install -r ${ROOT}/requirements_versions.txt && \
@@ -231,14 +236,14 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     ultralytics==8.0.145 py-cpuinfo protobuf==3.20 rembg==2.0.38 \
     deepdanbooru onnxruntime-gpu jsonschema opencv_contrib_python opencv_python opencv_python_headless packaging Pillow tqdm \
     chardet PyExecJS lxml pathos cryptography openai aliyun-python-sdk-core aliyun-python-sdk-alimt send2trash \
-    insightface==0.7.3 tensorflow ifnude httpx==0.24.1 && \
-    pip --timeout=120 install xformers==0.0.20 taming-transformers-rom1504 && \
-    pip --timeout=120 install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cu118
-
+    tensorflow ifnude httpx==0.24.1
+#RUN --mount=type=cache,target=/root/.cache/pip \
+#    pip install insightface==0.7.3
+ 
 FROM sdwebui as base
 
 # 启动的时候会下载这个
-COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /clip-vit-large-patch14  ${SD_BUILTIN}/root/.cache/huggingface/hub/
+COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /clip-vit-large-patch14  ${SD_BUILTIN}/root/.cache/huggingface/hub/clip-vit-large-patch14
 
 # 面部修复 + 高分辨率修复 359M + 104M + 81.4M
 COPY --from=download_sdwebui --chown=${USER_NAME}:${GROUP_NAME} /codeformer-v0.1.0.pth ${SD_BUILTIN}/models/Codeformer/codeformer-v0.1.0.pth
@@ -292,7 +297,7 @@ COPY --from=execute --chown=${USER_NAME}:${GROUP_NAME} ${SD_BUILTIN} ${SD_BUILTI
 FROM base as model-base
 
 # 内置插件
-COPY --from=execute --chown=${USER_NAME}:${GROUP_NAME} /extensions ${SD_BUILTIN}/extensions/
+COPY --from=execute --chown=${USER_NAME}:${GROUP_NAME} ${SD_BUILTIN} ${SD_BUILTIN}
 COPY --from=extensions --chown=${USER_NAME}:${GROUP_NAME} /extensions ${SD_BUILTIN}/extensions/ 
 
 # 中文提示词翻译 299M
@@ -369,6 +374,8 @@ COPY --from=download_models  --chown=${USER_NAME}:${GROUP_NAME} /chilloutmix_NiP
 RUN sed -i ${SD_BUILTIN}/config.json -e 's@sd-v1-5-inpainting.ckpt \[c6bbc15e32\]@chilloutmix_NiPrunedFp16Fix.safetensors \[59ffe2243a\]@'
 RUN sed -i ${SD_BUILTIN}/config.json -e 's@c6bbc15e3224e6973459ba78de4998b80b50112b0ae5b5c67113d56b4e366b19@59ffe2243a25c9fe137d590eb3c5c3d3273f1b4c86252da11bbdc9568773da0c@'
 
+RUN rm -rf /home/paas
 RUN chown -R ${USER_NAME}:${GROUP_NAME} /mnt
 RUN chown -R ${USER_NAME}:${GROUP_NAME} /root
+RUN chown -R ${USER_NAME}:${GROUP_NAME} /home
 USER ${USER_NAME}:${GROUP_NAME}
