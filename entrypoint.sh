@@ -56,12 +56,12 @@ function mount_pro() {
 }
 
 count=0
-while [ $count -lt 15 ]
+while [ $count -lt 25 ]
 do
     if [ -d "/mnt/auto" ]
     then
         echo "Directory /mnt/auto exists. Begin Mount."
-        mount_pro
+        #mount_pro
 	      break
     else
         echo "Directory /mnt/auto does not exist. Waiting for 1 seconds."
@@ -71,8 +71,10 @@ do
 done
 if [ $count -ge 15 ]; then
   echo "Directory /mnt/auto does not exist. Maximum wait time exceeded."
-  mount_file "$SD_BUILTIN" "${NAS_DIR}"
+  #mount_file "$SD_BUILTIN" "${NAS_DIR}"
 fi
+
+mount_pro
 
 if [ ! -e "${NAS_DIR}/styles.csv" ]; then
   echo "no styles.csv, create it"
