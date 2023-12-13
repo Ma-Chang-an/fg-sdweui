@@ -144,6 +144,8 @@ RUN aria2c -x 8 --dir "/" --out "control_v11p_sd15_scribble.yaml" "https://huggi
 RUN aria2c -x 8 --dir "/" --out "control_v1p_sd15_illumination.safetensors" "https://huggingface.co/ioclab/ioc-controlnet/resolve/main/models/control_v1p_sd15_illumination.safetensors"
 RUN aria2c -x 8 --dir "/" --out "buffalo_l.zip" "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip"
 RUN aria2c -x 8 --dir "/" --out "classes" "https://huggingface.co/s0md3v/nudity-checker/resolve/main/classes"
+
+RUN apt update && apt install -y unzip
 RUN unzip /buffalo_l.zip -d /buffalo_l && rm -rf /buffalo_l.zip
 ############################# 
 #          内置模型         #
