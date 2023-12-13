@@ -137,14 +137,14 @@ FROM python:3.10.9-slim as download_extensions
 
 RUN apt update && apt install -y aria2
 
-#RUN aria2c -x 8 --dir "/" --out "inswapper_128.onnx" "https://huggingface.co/ezioruan/inswapper_128.onnx/resolve/main/inswapper_128.onnx" 
-#RUN aria2c -x 8 --dir "/" --out "detector.onnx" "https://huggingface.co/s0md3v/nudity-checker/resolve/main/detector.onnx" 
-#RUN aria2c -x 8 --dir "/" --out "control_v11p_sd15_scribble.pth" "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_scribble.pth"
-#RUN aria2c -x 8 --dir "/" --out "control_v11p_sd15_scribble.yaml" "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_scribble.yaml"
+RUN aria2c -x 8 --dir "/" --out "inswapper_128.onnx" "https://huggingface.co/ezioruan/inswapper_128.onnx/resolve/main/inswapper_128.onnx" 
+RUN aria2c -x 8 --dir "/" --out "detector.onnx" "https://huggingface.co/s0md3v/nudity-checker/resolve/main/detector.onnx" 
+RUN aria2c -x 8 --dir "/" --out "control_v11p_sd15_scribble.pth" "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_scribble.pth"
+RUN aria2c -x 8 --dir "/" --out "control_v11p_sd15_scribble.yaml" "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_scribble.yaml"
 RUN aria2c -x 8 --dir "/" --out "control_v1p_sd15_illumination.safetensors" "https://huggingface.co/ioclab/ioc-controlnet/resolve/main/models/control_v1p_sd15_illumination.safetensors"
-#RUN aria2c -x 8 --dir "/" --out "buffalo_l.zip" "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip"
-#RUN aria2c -x 8 --dir "/" --out "classes" "https://huggingface.co/s0md3v/nudity-checker/resolve/main/classes"
-#RUN unzip /buffalo_l.zip -d /buffalo_l && rm -rf /buffalo_l.zip
+RUN aria2c -x 8 --dir "/" --out "buffalo_l.zip" "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip"
+RUN aria2c -x 8 --dir "/" --out "classes" "https://huggingface.co/s0md3v/nudity-checker/resolve/main/classes"
+RUN unzip /buffalo_l.zip -d /buffalo_l && rm -rf /buffalo_l.zip
 ############################# 
 #          内置模型         #
 #############################
@@ -236,9 +236,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     ultralytics==8.0.145 py-cpuinfo protobuf==3.20 rembg==2.0.38 \
     deepdanbooru onnxruntime-gpu jsonschema opencv_contrib_python opencv_python opencv_python_headless packaging Pillow tqdm \
     chardet PyExecJS lxml pathos cryptography openai aliyun-python-sdk-core aliyun-python-sdk-alimt send2trash \
-    tensorflow ifnude httpx==0.24.1
-#RUN --mount=type=cache,target=/root/.cache/pip \
-#    pip install insightface==0.7.3
+    tensorflow ifnude httpx==0.24.1 insightface==0.7.3
  
 FROM sdwebui as base
 
@@ -309,11 +307,11 @@ COPY --from=download_huggingface --chown=${USER_NAME}:${GROUP_NAME} /sd-prompt-t
 # COPY --from=download_extensions /model_base_caption_capfilt_large.pth ${SD_BUILTIN}/models/BLIP/model_base_caption_capfilt_large.pth 
 
 # roop 554M + 
-# COPY --from=download_extensions /inswapper_128.onnx ${SD_BUILTIN}/models/roop/inswapper_128.onnx
-# COPY --from=download_extensions /detector.onnx ${SD_BUILTIN}/root/.ifnude/detector.onnx
-#COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /classes ${SD_BUILTIN}/root/.ifnude/classes
+COPY --from=download_extensions /inswapper_128.onnx ${SD_BUILTIN}/models/roop/inswapper_128.onnx
+COPY --from=download_extensions /detector.onnx ${SD_BUILTIN}/root/.ifnude/detector.onnx
+COPY --from=download_extensions --chown=${USER_NAME}:${GROUP_NAME} /classes ${SD_BUILTIN}/root/.ifnude/classes
 # 275M
-#COPY --from=models --chown=${USER_NAME}:${GROUP_NAME} /buffalo_l ${SD_BUILTIN}/root/.insightface/models/buffalo_l
+COPY --from=download_extensions --chown=${USER_NAME}:${GROUP_NAME} /buffalo_l ${SD_BUILTIN}/root/.insightface/models/buffalo_l
 
 # controlnet 
 # COPY --from=download_extensions /control_v11p_sd15_scribble.pth ${SD_BUILTIN}/models/ControlNet/control_v11p_sd15_scribble.pth
