@@ -131,7 +131,8 @@ if [ -d "${ROOT}/extensions/adetailer" ];then
 fi
 
 export ARGS="${CLI_ARGS} ${EXTRA_ARGS} ${AD_NO_HUGGINGFACE}"
-
+#export PYTHONPATH="${PYTHONPATH:-}:${NAS_DIR}/python"
+export SD_WEBUI_CACHE_FILE="/mnt/auto/sd/cache.json"
 echo "args: $ARGS"
 
 python webui.py --port 8000 --listen ${ARGS}

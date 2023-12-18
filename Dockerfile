@@ -165,7 +165,7 @@ RUN aria2c -x 16 --dir "/" --out "JapaneseDollLikeness.safetensors" "https://civ
 RUN aria2c -x 16 --dir "/" --out "chilloutmix_NiPrunedFp16Fix.safetensors" "https://huggingface.co/samle/sd-webui-models/resolve/main/chilloutmix_NiPrunedFp16Fix.safetensors"
 
 
-RUN aria2c -x 16 --dir "/" --out "cIF8Anime2.43ol.ckpt" "https://civitai.com/api/download/models/28569"
+# RUN aria2c -x 16 --dir "/" --out "cIF8Anime2.43ol.ckpt" "https://civitai.com/api/download/models/28569"
 RUN aria2c -x 16 --dir "/" --out "vae-ft-mse-840000-ema-pruned.safetensors" "https://huggingface.co/stabilityai/sd-vae-ft-mse-original/resolve/main/vae-ft-mse-840000-ema-pruned.safetensors"
 
 RUN aria2c -x 16 --dir "/" --out "moxin.safetensors" "https://civitai.com/api/download/models/14856?type=Model&format=SafeTensor&size=full&fp=fp16"
@@ -206,6 +206,7 @@ ENV USER_ID=1003
 ENV GROUP_NAME=paas
 ENV USER_NAME=paas
 ENV HOME=/home/paas
+ENV PYTHONPATH=/mnt/auto/sd/python
 
 RUN groupadd -g ${GROUP_ID} ${GROUP_NAME} && \
     useradd -m -u ${USER_ID} -g ${GROUP_ID} ${USER_NAME}
@@ -215,13 +216,18 @@ RUN --mount=type=cache,target=/var/cache/apt \
     apt install -y --no-install-recommends \
     wget git fonts-dejavu-core rsync git jq moreutils aria2 \
     ffmpeg libglfw3-dev libgles2-mesa-dev pkg-config libcairo2 libcairo2-dev \
-    build-essential gcc g++ procps unzip curl python3 python3-pip
+    build-essential gcc g++ procps unzip curl python3 python3-pip 
+
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt install -y --no-install-recommends software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt update && \
+    apt install -y --no-install-recommends libpython3.10-dev
 
 RUN ln -sfn /usr/bin/python3 /usr/bin/python
 
 COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /stable-diffusion-webui ${ROOT}
 COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /repositories/ ${ROOT}/repositories/
-#COPY --from=repositories --chown=${USER_NAME}:${GROUP_NAME} /clip-vit-large-patch14 ${HOME}/openai/clip-vit-large-patch14
 
 RUN sed -i ${ROOT}/repositories/stable-diffusion-stability-ai/ldm/modules/encoders/modules.py -e 's@openai/clip-vit-large-patch14@/home/paas/.cache/huggingface/hub/clip-vit-large-patch14@'
 
@@ -239,6 +245,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     deepdanbooru onnxruntime-gpu jsonschema opencv_contrib_python opencv_python opencv_python_headless packaging Pillow tqdm \
     chardet PyExecJS lxml pathos cryptography openai aliyun-python-sdk-core aliyun-python-sdk-alimt send2trash \
     tensorflow ifnude httpx==0.24.1 insightface==0.7.3
+
+RUN pip install onnx==1.14.0
  
 FROM sdwebui as base
 
@@ -309,11 +317,12 @@ COPY --from=download_huggingface --chown=${USER_NAME}:${GROUP_NAME} /sd-prompt-t
 # COPY --from=download_extensions /model_base_caption_capfilt_large.pth ${SD_BUILTIN}/models/BLIP/model_base_caption_capfilt_large.pth 
 
 # roop 554M + 
-COPY --from=download_extensions /inswapper_128.onnx ${SD_BUILTIN}/models/roop/inswapper_128.onnx
-COPY --from=download_extensions /detector.onnx ${SD_BUILTIN}/root/.ifnude/detector.onnx
+COPY --from=download_extensions --chown=${USER_NAME}:${GROUP_NAME} /inswapper_128.onnx ${SD_BUILTIN}/models/roop/inswapper_128.onnx
+COPY --from=download_extensions --chown=${USER_NAME}:${GROUP_NAME} /detector.onnx ${SD_BUILTIN}/root/.ifnude/detector.onnx
 COPY --from=download_extensions --chown=${USER_NAME}:${GROUP_NAME} /classes ${SD_BUILTIN}/root/.ifnude/classes
 # 275M
 COPY --from=download_extensions --chown=${USER_NAME}:${GROUP_NAME} /buffalo_l ${SD_BUILTIN}/root/.insightface/models/buffalo_l
+COPY --from=download_extensions --chown=${USER_NAME}:${GROUP_NAME} /buffalo_l ${SD_BUILTIN}/models/insightface/models/buffalo_l
 
 # controlnet 
 # COPY --from=download_extensions /control_v11p_sd15_scribble.pth ${SD_BUILTIN}/models/ControlNet/control_v11p_sd15_scribble.pth
@@ -324,9 +333,9 @@ COPY --from=download_extensions --chown=${USER_NAME}:${GROUP_NAME} /buffalo_l ${
 COPY --from=download_huggingface --chown=${USER_NAME}:${GROUP_NAME} /models--Bingsu--adetailer ${SD_BUILTIN}/root/.cache/huggingface/hub/
 
 # 内置模型
-COPY --from=download_models --chown=${USER_NAME}:${GROUP_NAME} /cIF8Anime2.43ol.ckpt ${SD_BUILTIN}/models/VAE/cIF8Anime2.43ol.ckpt
+# COPY --from=download_models --chown=${USER_NAME}:${GROUP_NAME} /cIF8Anime2.43ol.ckpt ${SD_BUILTIN}/models/VAE/cIF8Anime2.43ol.ckpt
 
-# COPY --from=download_models  /moxin.safetensors ${SD_BUILTIN}/models/Lora/moxin.safetensors
+COPY --from=download_models  --chown=${USER_NAME}:${GROUP_NAME} /moxin.safetensors ${SD_BUILTIN}/models/Lora/moxin.safetensors
 COPY --from=download_models  --chown=${USER_NAME}:${GROUP_NAME} /milkingMachine_v11.safetensors ${SD_BUILTIN}/models/Lora/milkingMachine_v11.safetensors
 COPY --from=download_models  --chown=${USER_NAME}:${GROUP_NAME} /blingdbox_v1_mix.safetensors ${SD_BUILTIN}/models/Lora/blingdbox_v1_mix.safetensors
 COPY --from=download_models  --chown=${USER_NAME}:${GROUP_NAME} /GachaSpliash4.safetensors ${SD_BUILTIN}/models/Lora/GachaSpliash4.safetensors
@@ -378,4 +387,7 @@ RUN rm -rf /home/paas
 RUN chown -R ${USER_NAME}:${GROUP_NAME} /mnt
 RUN chown -R ${USER_NAME}:${GROUP_NAME} /root
 RUN chown -R ${USER_NAME}:${GROUP_NAME} /home
+
+ENV PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
 USER ${USER_NAME}:${GROUP_NAME}
