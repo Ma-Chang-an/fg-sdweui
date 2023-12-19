@@ -116,6 +116,10 @@ RUN . /clone.sh /extensions/stable-diffusion-webui-wd14-tagger https://github.co
 # sdweb-easy-prompt-selector 提示词选择
 COPY ./sd-resource/extensions/sdweb-easy-prompt-selector /extensions/sdweb-easy-prompt-selector
 
+# sd-webui-python-module-install python依赖安装
+RUN . /clone.sh /extensions/sd-webui-python-module-install https://github.com/Ma-Chang-an/sd-webui-python-module-install.git e0fa082b218f36363b09bdcbdec323f777b18992 && \
+    cd /extensions/sd-webui-python-module-install && \
+    rm -rf docs *.md .gitignore
 
 ############################# 
 #     sdwebui 需要的模型    #
