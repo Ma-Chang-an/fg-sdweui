@@ -41,8 +41,8 @@ RUN git lfs install
 RUN GIT_LFS_SKIP_SMUDGE=1 git clone https://huggingface.co/openai/clip-vit-large-patch14 /clip-vit-large-patch14
 
 # 定制化修改：Websocket不支持导致的结果无法返回
-COPY ./txt2img.patch /stable-diffusion-webui/txt2img.patch
-RUN cd /stable-diffusion-webui && git apply  txt2img.patch
+COPY ./txt2img.diff /stable-diffusion-webui/txt2img.diff
+RUN cd /stable-diffusion-webui && git apply --whitespace=fix txt2img.diff 
 ############################# 
 #     内置的插件下载        #
 #############################

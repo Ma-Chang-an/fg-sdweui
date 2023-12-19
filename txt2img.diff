@@ -1,0 +1,93 @@
+diff --git a/javascript/ui.js b/javascript/ui.js
+index bedcbf3e..a926bcab 100644
+--- a/javascript/ui.js
++++ b/javascript/ui.js
+@@ -140,7 +140,12 @@ function submit() {
+     requestProgress(id, gradioApp().getElementById('txt2img_gallery_container'), gradioApp().getElementById('txt2img_gallery'), function() {
+         showSubmitButtons('txt2img', true);
+         localRemove("txt2img_task_id");
+-        showRestoreProgressButton('txt2img', false);
++	showRestoreProgressButton('txt2img', false);
++	label_div = gradioApp().querySelector('#txt2img_result_fill_txt');
++	textArea = label_div.querySelector("textarea");
++	textArea.value = id;
++	updateInput(textArea);
++	gradioApp().getElementById('txt2img_result_fill_btn').click();
+     });
+ 
+     var res = create_submit_args(arguments);
+diff --git a/modules/progress.py b/modules/progress.py
+index 69921de7..4005dc78 100644
+--- a/modules/progress.py
++++ b/modules/progress.py
+@@ -41,6 +41,13 @@ def record_results(id_task, res):
+         recorded_results.pop(0)
+ 
+ 
++def get_record_result(id_task):
++    for recorded_result in recorded_results:
++        if recorded_result[0] == id_task:
++            return recorded_result[1]
++    return None
++
++
+ def add_task_to_queue(id_job):
+     pending_tasks[id_job] = time.time()
+ 
+diff --git a/modules/ui.py b/modules/ui.py
+index 579bab98..a4409e74 100644
+--- a/modules/ui.py
++++ b/modules/ui.py
+@@ -314,6 +314,15 @@ def create_override_settings_dropdown(tabname, row):
+     return dropdown
+ 
+ 
++def getFinishTxt2ImgResult(id_task):
++    print(f"getFinishTxt2ImgResult task ", id_task)
++    processed = progress.get_record_result(id_task)
++    print(f"getFinishTxt2ImgResult processed ", processed)
++    if processed == None:
++        return "", "", "", ""
++    return processed
++
++
+ def create_ui():
+     import modules.img2img
+     import modules.txt2img
+@@ -335,6 +344,9 @@ def create_ui():
+ 
+         with gr.Tab("Generation", id="txt2img_generation") as txt2img_generation_tab, ResizeHandleRow(equal_height=False):
+             with gr.Column(variant='compact', elem_id="txt2img_settings"):
++                txt2img_result_fill_btn = gr.Button(visible=False, elem_id="txt2img_result_fill_btn")
++                txt2img_result_fill_txt = gr.Text(visible=False, elem_id="txt2img_result_fill_txt")
++
+                 scripts.scripts_txt2img.prepare_ui()
+ 
+                 for category in ordered_ui_categories():
+@@ -464,6 +476,18 @@ def create_ui():
+ 
+                 ] + custom_inputs,
+ 
++                # outputs=[
++                #     txt2img_gallery,
++                #     generation_info,
++                #     html_info,
++                #     html_log,
++                # ],
++                show_progress=False,
++            )
++
++            txt2img_result_args = dict(
++                fn=getFinishTxt2ImgResult,
++                inputs=[txt2img_result_fill_txt],
+                 outputs=[
+                     txt2img_gallery,
+                     generation_info,
+@@ -475,6 +499,7 @@ def create_ui():
+ 
+             toprow.prompt.submit(**txt2img_args)
+             toprow.submit.click(**txt2img_args)
++            txt2img_result_fill_btn.click(**txt2img_result_args)
+ 
+             res_switch_btn.click(fn=None, _js="function(){switchWidthHeight('txt2img')}", inputs=None, outputs=None, show_progress=False)
+ 
