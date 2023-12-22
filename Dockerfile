@@ -117,7 +117,7 @@ RUN . /clone.sh /extensions/stable-diffusion-webui-wd14-tagger https://github.co
 COPY ./sd-resource/extensions/sdweb-easy-prompt-selector /extensions/sdweb-easy-prompt-selector
 
 # sd-webui-python-module-install python依赖安装
-RUN . /clone.sh /extensions/sd-webui-python-module-install https://github.com/Ma-Chang-an/sd-webui-python-module-install.git e0fa082b218f36363b09bdcbdec323f777b18992 && \
+RUN . /clone.sh /extensions/sd-webui-python-module-install https://github.com/Ma-Chang-an/sd-webui-python-module-install.git 78921c84e9db22e6977d8da3278888481ebec854 && \
     cd /extensions/sd-webui-python-module-install && \
     rm -rf docs *.md .gitignore
 
@@ -214,23 +214,18 @@ ENV USER_ID=1003
 ENV GROUP_NAME=paas
 ENV USER_NAME=paas
 ENV HOME=/home/paas
-ENV PYTHONPATH=/mnt/auto/sd/python
 
 RUN groupadd -g ${GROUP_ID} ${GROUP_NAME} && \
     useradd -m -u ${USER_ID} -g ${GROUP_ID} ${USER_NAME}
 
 RUN --mount=type=cache,target=/var/cache/apt \
     apt update && \
+    apt install -y --no-install-recommends software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
     apt install -y --no-install-recommends \
     wget git fonts-dejavu-core rsync git jq moreutils aria2 \
     ffmpeg libglfw3-dev libgles2-mesa-dev pkg-config libcairo2 libcairo2-dev \
-    build-essential gcc g++ procps unzip curl python3 python3-pip 
-
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt install -y --no-install-recommends software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa && \
-    apt update && \
-    apt install -y --no-install-recommends libpython3.10-dev
+    build-essential gcc g++ procps unzip curl python3 python3-pip libpython3.10-dev
 
 RUN ln -sfn /usr/bin/python3 /usr/bin/python
 
@@ -252,7 +247,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     ultralytics==8.0.145 py-cpuinfo protobuf==3.20 rembg==2.0.38 \
     deepdanbooru onnxruntime-gpu jsonschema opencv_contrib_python opencv_python opencv_python_headless packaging Pillow tqdm \
     chardet PyExecJS lxml pathos cryptography openai aliyun-python-sdk-core aliyun-python-sdk-alimt send2trash \
-    tensorflow ifnude httpx==0.24.1 insightface==0.7.3
+    tensorflow ifnude httpx==0.24.1 insightface==0.7.3 virtualenv
 
 RUN pip install onnx==1.14.0
  
