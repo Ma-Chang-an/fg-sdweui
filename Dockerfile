@@ -72,7 +72,7 @@ RUN . /clone.sh /extensions/sd-webui-deforum https://github.com/deforum-art/sd-w
     rm -rf .github tests *.md .gitignore
 
 # sd-webui-llul 细节增强
-RUN . /clone.sh /extensions/sd-webui-llul https://github.com/hnmr293/sd-webui-llul.git aa47b3eeb45c53f0d6ccaae59abf36e8ed6731f5 && \
+RUN . /clone.sh /extensions/sd-webui-llul https://github.com/hnmr293/sd-webui-llul.git 6c5ac1b0aa29736e0aad3476939e4e05f25d20d7 && \
     cd /extensions/sd-webui-llul && \
     rm -rf images *.md .gitignore
 
@@ -250,6 +250,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     tensorflow ifnude httpx==0.24.1 insightface==0.7.3 virtualenv
 
 RUN pip install onnx==1.14.0
+RUN pip install diffusers==0.11.1 transformers==4.25.1 dynamicprompts[attentiongrabber,magicprompt]~=0.30.4
  
 FROM sdwebui as base
 
@@ -264,16 +265,16 @@ COPY --from=download_sdwebui --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsene
 # DeepBooru 反向推导提示词 614M
 #COPY --from=download_sdwebui /model-resnet_custom_v3.pt ${SD_BUILTIN}/models/torch_deepdanbooru/model-resnet_custom_v3.pt
 
-COPY --chown=${USER_NAME}:${GROUP_NAME} ./entrypoint.sh ${ROOT}/entrypoint.sh
+COPY --chown=${USER_NAME}:${GROUP_NAME} ./entrypoint.sh /entrypoint.sh
 
 EXPOSE 8000
 
-WORKDIR ${ROOT}
+WORKDIR /
 
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ENV NVIDIA_VISIBLE_DEVICES=all
 
-CMD bash ${ROOT}/entrypoint.sh
+CMD bash /entrypoint.sh
 ############################# 
 #      执行部分文件         #
 #############################

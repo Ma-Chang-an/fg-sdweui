@@ -135,4 +135,4 @@ export PYTHONPATH="${PYTHONPATH:-}:/usr/local/lib/python3.10/dist-packages/:${NA
 export SD_WEBUI_CACHE_FILE="/mnt/auto/sd/cache.json"
 echo "args: $ARGS"
 
-python webui.py --port 8000 --listen ${ARGS}
+python ${ROOT}/webui.py --port 8000 --listen ${ARGS}
