@@ -265,7 +265,7 @@ COPY --from=download_sdwebui --chown=${USER_NAME}:${GROUP_NAME} /parsing_parsene
 # DeepBooru 反向推导提示词 614M
 #COPY --from=download_sdwebui /model-resnet_custom_v3.pt ${SD_BUILTIN}/models/torch_deepdanbooru/model-resnet_custom_v3.pt
 
-COPY --chown=${USER_NAME}:${GROUP_NAME} ./entrypoint.sh /entrypoint.sh
+COPY --chown=${USER_NAME}:${GROUP_NAME} ./entrypoint.sh ${ROOT}/entrypoint.sh
 
 EXPOSE 8000
 
@@ -274,7 +274,7 @@ WORKDIR /
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ENV NVIDIA_VISIBLE_DEVICES=all
 
-CMD bash /entrypoint.sh
+CMD bash ${ROOT}/entrypoint.sh
 ############################# 
 #      执行部分文件         #
 #############################

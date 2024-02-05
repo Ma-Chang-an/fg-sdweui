@@ -25,7 +25,7 @@ function mount_pro() {
   mkdir -p "${NAS_DIR}"
 
   # 去除无用的软链接
-  find -L . -type l -delete
+  find -L ${NAS_DIR} -type l -delete
 
   echo "with NAS, mount built-in files to ${NAS_DIR}"
 
@@ -135,4 +135,6 @@ export PYTHONPATH="${PYTHONPATH:-}:/usr/local/lib/python3.10/dist-packages/:${NA
 export SD_WEBUI_CACHE_FILE="/mnt/auto/sd/cache.json"
 echo "args: $ARGS"
 
-python ${ROOT}/webui.py --port 8000 --listen ${ARGS}
+cd ${ROOT}
+
+python webui.py --port 8000 --listen ${ARGS}
