@@ -34,7 +34,7 @@ RUN . /clone.sh /repositories/clip-interrogator https://github.com/pharmapsychot
 
 RUN git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git /stable-diffusion-webui && \
     cd /stable-diffusion-webui && \
-    git reset --hard v1.6.0
+    git reset --hard v1.7.0
 
 RUN git lfs install
 

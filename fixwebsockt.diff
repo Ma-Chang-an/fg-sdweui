@@ -1,18 +1,16 @@
 diff --git a/javascript/ui.js b/javascript/ui.js
-index bedcbf3e..04abd1c9 100644
+index 18c9f891..8dc75de7 100644
 --- a/javascript/ui.js
 +++ b/javascript/ui.js
-@@ -140,7 +140,12 @@ function submit() {
-     requestProgress(id, gradioApp().getElementById('txt2img_gallery_container'), gradioApp().getElementById('txt2img_gallery'), function() {
+@@ -141,6 +141,11 @@ function submit() {
          showSubmitButtons('txt2img', true);
          localRemove("txt2img_task_id");
--        showRestoreProgressButton('txt2img', false);
-+	showRestoreProgressButton('txt2img', false);
+         showRestoreProgressButton('txt2img', false);
 +	label_div = gradioApp().querySelector('#txt2img_result_fill_txt');
-+	textArea = label_div.querySelector("textarea");
-+	textArea.value = id;
-+	updateInput(textArea);
-+	gradioApp().getElementById('txt2img_result_fill_btn').click();
++        textArea = label_div.querySelector("textarea");
++        textArea.value = id;
++        updateInput(textArea);
++        gradioApp().getElementById('txt2img_result_fill_btn').click();
      });
  
      var res = create_submit_args(arguments);
@@ -20,7 +18,7 @@ index bedcbf3e..04abd1c9 100644
          showSubmitButtons('img2img', true);
          localRemove("img2img_task_id");
          showRestoreProgressButton('img2img', false);
-+    	label_div = gradioApp().querySelector('#img2img_result_fill_txt');
++        label_div = gradioApp().querySelector('#img2img_result_fill_txt');
 +        textArea = label_div.querySelector("textarea");
 +        textArea.value = id;
 +        updateInput(textArea);
@@ -29,31 +27,29 @@ index bedcbf3e..04abd1c9 100644
  
      var res = create_submit_args(arguments);
 diff --git a/modules/call_queue.py b/modules/call_queue.py
-index ddf0d573..44db4c31 100644
+index ddf0d573..c99c314b 100644
 --- a/modules/call_queue.py
 +++ b/modules/call_queue.py
-@@ -52,6 +52,12 @@ def wrap_gradio_call(func, extra_outputs=None, add_stats=False):
+@@ -52,6 +52,11 @@ def wrap_gradio_call(func, extra_outputs=None, add_stats=False):
          if run_memmon:
              shared.mem_mon.monitor()
          t = time.perf_counter()
 +        # if the first argument is a string that says "task(...)", it is treated as a job id
 +        if args and type(args[0]) == str and args[0].startswith("task(") and args[0].endswith(")"):
 +            id_task = args[0]
-+            progress.add_task_to_queue(id_task)
 +        else:
 +            id_task = None
  
          try:
              res = list(func(*args, **kwargs))
-@@ -112,7 +118,7 @@ def wrap_gradio_call(func, extra_outputs=None, add_stats=False):
+@@ -112,6 +117,7 @@ def wrap_gradio_call(func, extra_outputs=None, add_stats=False):
  
          # last item is always HTML
          res[-1] += f"<div class='performance'><p class='time'>Time taken: <wbr><span class='measurement'>{elapsed_text}</span></p>{vram_html}</div>"
--
 +        progress.record_full_results(id_task, tuple(res))
+ 
          return tuple(res)
  
-     return f
 diff --git a/modules/progress.py b/modules/progress.py
 index 69921de7..75bfd0db 100644
 --- a/modules/progress.py
@@ -87,37 +83,32 @@ index 69921de7..75bfd0db 100644
      pending_tasks[id_job] = time.time()
  
 diff --git a/modules/ui.py b/modules/ui.py
-index 579bab98..149c3b68 100644
+index d80486dd..a11373c4 100644
 --- a/modules/ui.py
 +++ b/modules/ui.py
-@@ -313,6 +313,13 @@ def create_override_settings_dropdown(tabname, row):
+@@ -250,6 +250,11 @@ def create_override_settings_dropdown(tabname, row):
  
      return dropdown
  
 +def getFinishImgResult(id_task):
-+    print(f"getFinishTxt2ImgResult task ", id_task)
 +    processed = progress.get_record_result(id_task)
-+    print(f"getFinishTxt2ImgResult processed ", processed)
 +    if processed == None:
 +        return "", "", "", ""
 +    return processed
  
  def create_ui():
      import modules.img2img
-@@ -335,8 +342,11 @@ def create_ui():
- 
-         with gr.Tab("Generation", id="txt2img_generation") as txt2img_generation_tab, ResizeHandleRow(equal_height=False):
-             with gr.Column(variant='compact', elem_id="txt2img_settings"):
--                scripts.scripts_txt2img.prepare_ui()
+@@ -276,6 +281,9 @@ def create_ui():
+                     stack.enter_context(gr.Accordion("Open for Settings", open=False))
+                 stack.enter_context(gr.Column(variant='compact', elem_id="txt2img_settings"))
  
 +                txt2img_result_fill_btn = gr.Button(visible=False, elem_id="txt2img_result_fill_btn")
 +                txt2img_result_fill_txt = gr.Text(visible=False, elem_id="txt2img_result_fill_txt")
 +
-+                scripts.scripts_txt2img.prepare_ui()
+                 scripts.scripts_txt2img.prepare_ui()
+ 
                  for category in ordered_ui_categories():
-                     if category == "sampler":
-                         steps, sampler_name = create_sampler_and_steps_selection(sd_samplers.visible_sampler_names(), "txt2img")
-@@ -464,6 +474,12 @@ def create_ui():
+@@ -408,6 +416,12 @@ def create_ui():
  
                  ] + custom_inputs,
  
@@ -130,7 +121,7 @@ index 579bab98..149c3b68 100644
                  outputs=[
                      txt2img_gallery,
                      generation_info,
-@@ -475,6 +491,7 @@ def create_ui():
+@@ -419,6 +433,7 @@ def create_ui():
  
              toprow.prompt.submit(**txt2img_args)
              toprow.submit.click(**txt2img_args)
@@ -138,7 +129,7 @@ index 579bab98..149c3b68 100644
  
              res_switch_btn.click(fn=None, _js="function(){switchWidthHeight('txt2img')}", inputs=None, outputs=None, show_progress=False)
  
-@@ -554,6 +571,9 @@ def create_ui():
+@@ -502,6 +517,9 @@ def create_ui():
                  copy_image_buttons = []
                  copy_image_destinations = {}
  
@@ -148,7 +139,7 @@ index 579bab98..149c3b68 100644
                  def add_copy_image_controls(tab_name, elem):
                      with gr.Row(variant="compact", elem_id=f"img2img_copy_to_{tab_name}"):
                          gr.HTML("Copy image to: ", elem_id=f"img2img_label_copy_to_{tab_name}")
-@@ -803,6 +823,12 @@ def create_ui():
+@@ -755,6 +773,12 @@ def create_ui():
                      img2img_batch_png_info_props,
                      img2img_batch_png_info_dir,
                  ] + custom_inputs,
@@ -157,16 +148,15 @@ index 579bab98..149c3b68 100644
 +
 +            img2img_result_args = dict(
 +                fn=getFinishImgResult,
-+                inputs=[img2img_result_fill_txt],
++                inputs=[txt2img_result_fill_txt],
                  outputs=[
                      img2img_gallery,
                      generation_info,
-@@ -829,6 +855,8 @@ def create_ui():
+@@ -781,6 +805,7 @@ def create_ui():
  
              toprow.prompt.submit(**img2img_args)
              toprow.submit.click(**img2img_args)
 +            img2img_result_fill_btn.click(**img2img_result_args)
-+
  
              res_switch_btn.click(fn=None, _js="function(){switchWidthHeight('img2img')}", inputs=None, outputs=None, show_progress=False)
  
