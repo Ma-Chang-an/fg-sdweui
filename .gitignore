@@ -102,3 +102,8 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+.idea/.gitignore
+.idea/modules.xml
+.idea/stable-diffusion-webui-image.iml
+.idea/vcs.xml
+.idea/inspectionProfiles/Project_Default.xml
