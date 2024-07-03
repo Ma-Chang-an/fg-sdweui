@@ -1,0 +1,3 @@
+FROM swr.cn-east-3.myhuaweicloud.com/custom_container/sd-webui-new:v1.6.0.1
+
+RUN sed -i ${ROOT}/entrypoint.sh -e 's@CLI_ARGS="${CLI_ARGS:---xformers --enable-insecure-extension-access --skip-version-check --no-download-sd-model --skip-prepare-environment --no-gradio-queue}"@CLI_ARGS="${CLI_ARGS:---xformers --enable-insecure-extension-access --skip-version-check --no-download-sd-model --skip-prepare-environment}"@'
